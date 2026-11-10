@@ -9,7 +9,7 @@
 Клонировать репозиторий:
 
 ```bash
-git clone <URL_РЕПОЗИТОРИЯ>
+git clone https://github.com/Matvey53/infra-monitoring-project.git
 cd infra-monitoring-project
 ```
 
@@ -37,21 +37,49 @@ chmod +x check_api.sh analyze_logs.sh
 docker compose down
 ```
 
-## SSH и SCP
+## Безопасная передача файлов и развёртывание проекта
 
-**SSH** — защищённое подключение к удалённому серверу. **SCP** — передача файлов через SSH.
+Для передачи проекта на удалённый Linux-сервер используются SSH и SCP. SSH обеспечивает защищённое соединение, а SCP позволяет передавать файлы по зашифрованному каналу.
 
-Создание SSH-ключа:
+### 1. Генерация SSH-ключей
+
+На локальном компьютере создаётся пара SSH-ключей:
 
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/infra_monitoring
 ```
 
-Копирование публичного ключа на сервер:
+Приватный ключ остаётся на локальном компьютере, публичный используется для авторизации на сервере.
+
+### 2. Копирование публичного ключа
 
 ```bash
 ssh-copy-id -i ~/.ssh/infra_monitoring.pub user@SERVER_IP
 ```
+
+После добавления публичного ключа можно подключаться к серверу:
+
+```bash
+ssh -i ~/.ssh/infra_monitoring user@SERVER_IP
+```
+
+### 3. Передача проекта через SCP
+
+На локальном компьютере создаётся архив проекта:
+
+```bash
+tar --exclude=.git --exclude='*.log' \
+  --exclude=project.tar.gz -czf project.tar.gz .
+```
+
+Архив передаётся на удалённый сервер:
+
+```bash
+scp -i ~/.ssh/infra_monitoring \
+  project.tar.gz user@SERVER_IP:/tmp/
+```
+
+### 4. Пример развёртывания проекта
 
 Подключение к серверу:
 
@@ -59,29 +87,25 @@ ssh-copy-id -i ~/.ssh/infra_monitoring.pub user@SERVER_IP
 ssh -i ~/.ssh/infra_monitoring user@SERVER_IP
 ```
 
-Создание архива проекта:
+Распаковка проекта и запуск контейнеров:
 
 ```bash
-tar --exclude=.git --exclude='*.log' -czf project.tar.gz .
-```
-
-Передача архива через SCP:
-
-```bash
-scp -i ~/.ssh/infra_monitoring project.tar.gz user@SERVER_IP:/tmp/
-```
-
-Развёртывание на сервере:
-
-```bash
-ssh -i ~/.ssh/infra_monitoring user@SERVER_IP
 mkdir -p ~/infra-monitoring-project
 tar -xzf /tmp/project.tar.gz -C ~/infra-monitoring-project
 cd ~/infra-monitoring-project
+
 docker compose up -d
+docker compose ps
+curl http://localhost:80
 ```
 
-`SERVER_IP` и `user` заменяются адресом сервера и именем пользователя. На сервере должны быть установлены Docker и Docker Compose. Приватный SSH-ключ нельзя публиковать.
+При успешном запуске API возвращает:
+
+```text
+Monitoring Service Active
+```
+
+**Примечание:** `user` и `SERVER_IP` заменяются реальными данными сервера. Для запуска необходимы установленные Docker и Docker Compose. Приватный SSH-ключ не должен передаваться на сервер или публиковаться в GitHub.
 
 ## CI/CD
 
