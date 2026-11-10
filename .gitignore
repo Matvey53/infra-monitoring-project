@@ -1,6 +1,19 @@
+# Логи
 *.log
+logs/
+
+# Временные файлы
 *.tmp
+*.temp
 *.swp
+*~
 .DS_Store
-__pycache__/
-.pytest_cache/
+
+# Артефакты сборки
+build/
+dist/
+*.tar.gz
+
+# Локальные настройки и секреты
+.env
+.env.*
